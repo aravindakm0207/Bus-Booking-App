@@ -1,0 +1,6 @@
+// src/redux/constants/seatConstants.js
+export const FETCH_SEAT_LAYOUT_SUCCESS = 'FETCH_SEAT_LAYOUT_SUCCESS';
+export const FETCH_SEAT_LAYOUT_FAIL = 'FETCH_SEAT_LAYOUT_FAIL';
+
+export const BOOK_SEATS_SUCCESS = 'BOOK_SEATS_SUCCESS';
+export const BOOK_SEATS_FAIL = 'BOOK_SEATS_FAIL';
