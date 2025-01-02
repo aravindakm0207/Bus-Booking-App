@@ -22,9 +22,11 @@ const busSchema = new mongoose.Schema({
             }
         ]
     ] ,
+    images: [String]
 });
 
 module.exports = mongoose.model('Bus', busSchema);
+
 
 /*
 const mongoose = require('mongoose');

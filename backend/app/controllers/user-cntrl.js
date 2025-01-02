@@ -1,3 +1,6 @@
+
+
+
 const User = require('../models/user-model')
 const jwt = require('jsonwebtoken')
 const bcryptjs = require('bcryptjs')
@@ -5,28 +8,46 @@ const { validationResult } = require('express-validator')
 const usersCltr = {}
 const {sendOTPEmail} = require('.././utils/otpMail')
 
+
+
 usersCltr.register = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log('Validation errors:', errors.array());  // Debugging line for validation errors
         return res.status(400).json({ errors: errors.array() });
     }
+
     const body = req.body;
+    console.log('Register request body:', body);  // Debugging line to log request body
+
     try {
         const existingUsers = await User.find();
+        console.log('Existing users found:', existingUsers);  // Debugging line for checking existing users
+
         let role = 'user';
         let isVerified = false;
 
         if (existingUsers.length === 0) {
             role = 'admin';
             isVerified = true;
+            console.log('First user, setting role to admin and verified:', { role, isVerified });
         } else if (body.role === 'operator') {
             role = 'operator';
+            console.log('Role set to operator:', role);
         } else if (role === 'user') {
             isVerified = true;
+            console.log('Role set to user, setting as verified:', isVerified);
         }
 
         const salt = await bcryptjs.genSalt();
+        console.log('Salt generated for password hashing');  // Debugging line for salt generation
+
         const hashPassword = await bcryptjs.hash(body.password, salt);
+        console.log('Password hashed successfully');  // Debugging line for password hashing
+
+        // Check if profilePic was uploaded and log it
+        const profilePicUrl = req.file ? req.file.path : null;
+        console.log('Profile picture URL:', profilePicUrl);  // Debugging line for profilePic URL
 
         const user = new User({
             username: body.username,
@@ -34,15 +55,20 @@ usersCltr.register = async (req, res) => {
             password: hashPassword,
             role: role,
             phone: body.phone,
-            isVerified: isVerified
+            profilePic: profilePicUrl,
+            isVerified: isVerified,
         });
-  
+
         await user.save();
+        console.log('User saved successfully:', user);  // Debugging line for successful user creation
         res.status(201).json(user);
     } catch (err) {
+        console.error('Error during registration:', err);  // Debugging line for errors
         res.status(500).json({ error: 'Something went wrong' });
     }
 };
+
+
 
 usersCltr.checkAdmin = async (req, res) => {
     try {
@@ -113,7 +139,7 @@ usersCltr.login = async (req, res) => {
 
     usersCltr.account = async (req, res) => {  // finding the user through token+
         try{
-            const user =  await User.findById(req.user.id)
+            const user =  await User.findById(req.user.id).select('-password'); 
             res.json(user)
         } catch(err) {
             res.status(500).json({ error: 'something went wrong'})
@@ -295,77 +321,5 @@ usersCltr.login = async (req, res) => {
 };
 
 module.exports = usersCltr
-
-
-
-/*
-usersCltr.register = async (req, res) => {
-    const errors = validationResult(req) 
-    if(!errors.isEmpty()) {
-       return res.status(400).json({ errors: errors.array()})
-    } 
-    const body = req.body 
-    try { 
-        const salt = await bcryptjs.genSalt() 
-        const hashPassword = await bcryptjs.hash(body.password, salt) 
-        const user = new User(body)
-        user.password = hashPassword
-        await user.save() 
-        res.status(201).json(user) 
-    } catch(err) {
-        res.status(500).json({ error: 'something went wrong'})
-    }
-}
-
-usersCltr.login = async (req, res) => {
-    const errors = validationResult(req) 
-    if(!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array()})
-    }
-    const body = req.body 
-    try { 
-        const user = await User.findOne({email: body.email }) 
-        if(user) {
-            const isAuth = await bcryptjs.compare(body.password, user.password)
-            if(isAuth) {
-                const tokenData = {
-                    id: user._id,
-                    // profileId: recruiterId
-                    role: user.role 
-                }
-                const token = jwt.sign(tokenData, process.env.JWT_SECRET, { expiresIn: '7d'})
-                return res.json({ token: token })
-            }
-            return res.status(404).json({ errors: 'invalid email / password '})
-        }
-        res.status(404).json({ errors: 'invalid email / password'})
-    } catch(err) {
-        res.status(500).json({ errors: 'something went wrong'})
-    }
-    
-}
-
-usersCltr.account = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id)
-        res.json(user)
-    } catch(err) {
-        res.status(500).json({ error: 'something went wrong'})
-    }
-}
-
-usersCltr.checkEmail = async (req, res) => {
-    const email = req.query.email 
-    const user = await User.findOne({ email: email })
-    if(user) {
-        res.json({ "is_email_registered" : true })
-    } else { 
-        res.json({ "is_email_registered": false  })
-    }
-}
-
-
-module.exports = usersCltr 
-*/
 
 

@@ -1,323 +1,4 @@
-/*
-const Trip = require('../models/trip-model');
-const Bus = require('../models/bus-model');
-const Route = require('../models/route-model');
-const tripCtrl = {};
-/*
-// Add a new trip
-tripCtrl.addTrip = async (req, res) => {
-    try {
-        const { busId, tripDate, price, departureTime, arrivalTime, routeID } = req.body;
 
-        // Fetch the bus by ID to get the seat layout
-        const bus = await Bus.findById(busId);
-
-        if (!bus) {
-            return res.status(404).json({ error: 'Bus not found' });
-        }
-
-        // Create the trip with the bus seat layout and routeID
-        const trip = new Trip({
-            bus: busId,
-            routeID: routeID, // Add the routeID here
-            date: tripDate,
-            arrival: arrivalTime,
-            departure: departureTime,
-            price,
-            seatLayout: bus.seatLayout
-        });
-
-        await trip.save();
-        res.status(201).json(trip);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-
-
-tripCtrl.addTrip = async (req, res) => {
-    try {
-        const { busId, tripDate, price, departureTime, arrivalTime, routeID, repeatTrip, repeatInterval } = req.body;
-
-        // Fetch the bus by ID to get the seat layout
-        const bus = await Bus.findById(busId);
-        if (!bus) {
-            return res.status(404).json({ error: 'Bus not found' });
-        }
-
-        // Parse the initial trip date
-        let currentDate = new Date(tripDate);
-
-        const trips = [];
-
-        // Create trips (repeat if necessary)
-        while (true) {
-            const trip = new Trip({
-                bus: busId,
-                routeID: routeID,
-                date: currentDate.toISOString(),
-                arrival: arrivalTime,
-                departure: departureTime,
-                price,
-                seatLayout: bus.seatLayout
-            });
-
-            // Save each trip
-            await trip.save();
-            trips.push(trip);
-
-            // If repeatTrip is false, break after creating the first trip
-            if (!repeatTrip) break;
-
-            // Add the interval to the date for the next trip (repeatInterval days)
-            currentDate.setDate(currentDate.getDate() + repeatInterval);
-
-            // Stop after repeating for a defined number of trips (e.g., 10 repeats)
-            if (trips.length >= 10) break;
-        }
-
-        res.status(201).json(trips); // Return the list of trips created
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-
-// Fetch seat layout for a specific trip
-tripCtrl.getSeatLayout = async (req, res) => {
-    const { tripId } = req.params;
-    try {
-        const trip = await Trip.findById(tripId);
-        if (!trip) {
-            return res.status(404).json({ message: 'Trip not found' });
-        }
-        res.json(trip.seatLayout);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// List all trips for a specific bus
-tripCtrl.listTrips = async (req, res) => {
-    const { busId } = req.params;
-    try {
-        const trips = await Trip.find({ bus: busId });
-        res.json(trips);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Update an existing trip
-tripCtrl.updateTrip = async (req, res) => {
-    const { tripId } = req.params;
-    try {
-        const trip = await Trip.findByIdAndUpdate(tripId, { ...req.body }, { new: true });
-        if (!trip) {
-            return res.status(404).json({ message: 'Trip not found' });
-        }
-        res.json(trip);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-// Get a single trip by ID
-tripCtrl.getSingleTrip = async (req, res) => {
-    const { tripId } = req.params;
-    try {
-        const trip = await Trip.findById(tripId).populate('bus');
-        if (!trip) {
-            return res.status(404).json({ message: 'Trip not found' });
-        }
-        res.json(trip);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Delete a trip
-tripCtrl.deleteTrip = async (req, res) => {
-    const { tripId } = req.params;
-    try {
-        const trip = await Trip.findByIdAndDelete(tripId);
-        if (!trip) {
-            return res.status(404).json({ message: 'Trip not found' });
-        }
-        res.json({ message: 'Trip deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Search trips based on source, destination, and date
-tripCtrl.searchTrips = async (req, res) => {
-    const { from, to, date } = req.query;
-
-    try {
-        console.log('Search Criteria:', { from, to, date });
-
-        // Find routes that match the source and destination
-        const routes = await Route.find({ from, to }).lean();
-        console.log('Matching Routes:', routes);
-
-        if (routes.length === 0) {
-            console.log('No routes found matching the search criteria.');
-            return res.status(404).json({ message: 'No routes found matching the search criteria.' });
-        }
-
-        const routeIds = routes.map(route => route._id);
-        console.log('Route IDs for Search:', routeIds);
-
-        // Ensure dates are parsed correctly
-        const startDate = new Date(date);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 1);
-
-        console.log('Searching for trips between:', startDate.toISOString(), 'and', endDate.toISOString());
-
-        // Find trips with the matching routeID and date range
-        const trips = await Trip.find({
-            routeID: { $in: routeIds },
-            date: { $gte: startDate, $lt: endDate }
-        }).populate('bus').lean();
-
-        console.log('Query Used:', {
-            routeID: { $in: routeIds },
-            date: { $gte: startDate, $lt: endDate }
-        });
-
-        console.log('Found Trips:', trips);
-
-        if (trips.length === 0) {
-            console.log('No trips found matching the search criteria.');
-            return res.status(404).json({ message: 'No trips found matching the search criteria.' });
-        }
-
-        res.json(trips);
-    } catch (error) {
-        console.error('Error during search:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
-
-
-
-module.exports = tripCtrl;
-
-
-
-const Trip = require('../models/trip-model');
-const Bus = require('../models/bus-model');
-const Route = require('../models/route-model');
-const tripCtrl = {};
-
-// Add a new trip with option to repeat
-tripCtrl.addTrip = async (req, res) => {
-    try {
-        const { busId, tripDate, price, departureTime, arrivalTime, routeID, repeatTrip, repeatInterval } = req.body;
-
-        // Fetch the bus by ID to get the seat layout
-        const bus = await Bus.findById(busId);
-        if (!bus) {
-            return res.status(404).json({ error: 'Bus not found' });
-        }
-
-        // Parse the initial trip date
-        let currentDate = new Date(tripDate);
-        const trips = [];
-
-        // Create trips (repeat if necessary)
-        while (true) {
-            const trip = new Trip({
-                bus: busId,
-                routeID: routeID,
-                date: currentDate.toISOString(),
-                arrival: arrivalTime,
-                departure: departureTime,
-                price,
-                seatLayout: bus.seatLayout
-            });
-
-            // Save each trip
-            await trip.save();
-            trips.push(trip);
-
-            // If repeatTrip is false, break after creating the first trip
-            if (!repeatTrip) break;
-
-            // Add the interval to the date for the next trip (repeatInterval days)
-            currentDate.setDate(currentDate.getDate() + repeatInterval);
-
-            // Stop after repeating for a defined number of trips (e.g., 10 repeats)
-            if (trips.length >= 10) break;
-        }
-
-        res.status(201).json(trips); // Return the list of trips created
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-// Fetch seat layout for a specific trip
-tripCtrl.getSeatLayout = async (req, res) => {
-    const { tripId } = req.params;
-    try {
-        const trip = await Trip.findById(tripId);
-        if (!trip) {
-            return res.status(404).json({ message: 'Trip not found' });
-        }
-        res.json(trip.seatLayout);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// List all trips for a specific bus
-tripCtrl.listTrips = async (req, res) => {
-    const { busId } = req.params;
-    try {
-        const trips = await Trip.find({ bus: busId });
-        res.json(trips);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-// Search trips based on source, destination, and date
-tripCtrl.searchTrips = async (req, res) => {
-    const { from, to, date } = req.query;
-
-    try {
-        const routes = await Route.find({ from, to }).lean();
-
-        if (routes.length === 0) {
-            return res.status(404).json({ message: 'No routes found matching the search criteria.' });
-        }
-
-        const routeIds = routes.map(route => route._id);
-        const startDate = new Date(date);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 1);
-
-        const trips = await Trip.find({
-            routeID: { $in: routeIds },
-            date: { $gte: startDate, $lt: endDate }
-        }).populate('bus').lean();
-
-        if (trips.length === 0) {
-            return res.status(404).json({ message: 'No trips found matching the search criteria.' });
-        }
-
-        res.json(trips);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-module.exports = tripCtrl;
-*/
 
 
 const Trip = require('../models/trip-model');
@@ -423,18 +104,20 @@ tripCtrl.listTrips = async (req, res) => {
         const trips = await Trip.find({ bus: { $in: busIds } })
             .populate({
                 path: 'bus',   // Populate bus details
-                select: 'busName busNumber busCapacity seatLayout', // Select only necessary fields
+                select: 'busName busNumber busCapacity seatLayout images', // Select only necessary fields
             })
             .populate({
                 path: 'routeID', // Populate route details
                 select: 'from to duration distance', // Select only necessary fields
-            });
+            })
+            .select('price date departure arrival');
+ // Select the price field here
 
         if (trips.length === 0) {
             return res.status(404).json({ message: 'No trips found for this operator' });
         }
 
-        // Send the list of trips with populated bus and route details
+        // Send the list of trips with populated bus, route details, and price
         res.json(trips);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -442,7 +125,10 @@ tripCtrl.listTrips = async (req, res) => {
 };
 
 
-// Update a trip (new)
+
+
+
+
 tripCtrl.updateTrip = async (req, res) => {
     const { tripId } = req.params;
     const { busId, tripDate, departureTime, arrivalTime, price, from, to, duration, distance } = req.body;
@@ -469,17 +155,25 @@ tripCtrl.updateTrip = async (req, res) => {
             }
         }
 
+        // Update other trip details
         trip.date = tripDate || trip.date;
         trip.departure = departureTime || trip.departure;
         trip.arrival = arrivalTime || trip.arrival;
         trip.price = price || trip.price;
 
         await trip.save();
-        res.json({ message: 'Trip updated successfully', trip });
+
+        // Populate bus and routeID in the updated trip before sending response
+        const updatedTrip = await Trip.findById(trip._id)
+            .populate('bus') // Populate the bus field
+            .populate('routeID'); // Populate the routeID if necessary
+
+        res.json({ message: 'Trip updated successfully', trip: updatedTrip });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 // Delete a trip (new)
 tripCtrl.deleteTrip = async (req, res) => {
@@ -502,6 +196,7 @@ tripCtrl.deleteTrip = async (req, res) => {
         res.status(500).json({ error: 'Server error or invalid trip ID format' });
     }
 };
+
 
 // Search trips based on source, destination, and date
 tripCtrl.searchTrips = async (req, res) => {
@@ -544,9 +239,103 @@ tripCtrl.searchTrips = async (req, res) => {
     }
 };
 
-// Fetch Seat Layout (when "View Seats" is clicked)
+
+
+tripCtrl.getTripsWithFilters = async (req, res) => {
+    const { from, to, date, price, rating, amenities, sortBy, sortOrder, page = 1, limit = 10 } = req.query;
+    
+    console.log('Received query parameters:', req.query);  // Log the query parameters
+    
+    try {
+        // Step 1: Find matching routes based on 'from' and 'to'
+        const routes = await Route.find({ from, to }).lean();
+
+        if (routes.length === 0) {
+            return res.status(404).json({ message: 'No routes found matching the search criteria.' });
+        }
+
+        const routeIds = routes.map(route => route._id);
+        const startDate = new Date(date);
+        const endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59, 999); // End of the day
+
+        // Step 2: Build initial search query based on routes and date
+        let searchQuery = {
+            routeID: { $in: routeIds },
+            date: {
+                $gte: startDate.setHours(0, 0, 0, 0), // Start of the day
+                $lt: endDate // End of the day
+            }
+        };
+
+        // Step 3: Apply price filter if provided
+        if (price) {
+            const priceRange = price.split('-');
+            if (priceRange.length === 2) {
+                searchQuery.price = { $gte: parseFloat(priceRange[0]), $lte: parseFloat(priceRange[1]) };
+            }
+        }
+
+        // Step 4: Apply rating filter if provided
+        if (rating) {
+            searchQuery['bus.rating'] = { $gte: parseFloat(rating) };
+        }
+
+        // Step 5: Apply amenities filter if provided
+        if (amenities) {
+            const amenitiesList = amenities.split(',').map(amenity => amenity.trim()).filter(Boolean);
+            console.log('Parsed amenities:', amenitiesList);  // Log the parsed amenities list
+            searchQuery['bus.amenities'] = { $all: amenitiesList }; // Match all amenities in the bus's amenities array
+        }
+
+        // Step 6: Apply sorting if provided
+        const sortOptions = {};
+        const validSortFields = ['price', 'rating', 'date'];
+        if (sortBy && validSortFields.includes(sortBy)) {
+            sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+        } else if (sortBy) {
+            return res.status(400).json({ message: `Invalid sortBy field: ${sortBy}` });
+        } else {
+            sortOptions.date = 1; // Default to sorting by date ascending if no sortBy is specified
+        }
+
+        // Log the final search query
+        console.log('Final search query:', searchQuery);  // Log the final search query
+
+        // Step 7: Find trips based on search query with filters, sorting, and pagination
+        const trips = await Trip.find(searchQuery)
+            .populate('bus')  // Populate the bus details
+            .populate('routeID')  // Populate the route details
+            .sort(sortOptions) // Sorting applied here
+            .skip((page - 1) * limit) // Pagination
+            .limit(limit);
+
+        if (trips.length === 0) {
+            return res.status(404).json({ message: 'No trips found matching the search criteria.' });
+        }
+
+        // Step 8: Get the total count for pagination
+        const total = await Trip.countDocuments(searchQuery);
+
+        // Step 9: Send the response with trips and pagination info
+        res.json({
+            data: trips,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        });
+
+    } catch (error) {
+        console.error('Error fetching trips:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
 tripCtrl.getSeatLayout = async (req, res) => {
     const { tripId } = req.params;
+
     try {
         const trip = await Trip.findById(tripId).populate('bus');
         if (!trip) return res.status(404).json({ message: 'Trip not found' });
@@ -560,6 +349,8 @@ tripCtrl.getSeatLayout = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
 
 
 module.exports = tripCtrl;

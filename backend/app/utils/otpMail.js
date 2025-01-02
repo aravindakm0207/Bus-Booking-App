@@ -1,3 +1,46 @@
+
+
+const nodemailer = require('nodemailer');
+
+// Create a transporter using Mailtrap's SMTP server
+const transporter = nodemailer.createTransport({
+  host: 'smtp.mailtrap.io', // Mailtrap SMTP host
+  port: 587, // Mailtrap SMTP port
+  auth: {
+    user: process.env.MAILTRAP_USER, // Your Mailtrap SMTP user
+    pass: process.env.MAILTRAP_PASS, // Your Mailtrap SMTP password
+  },
+});
+
+// Function to send OTP email
+const sendOTPEmail = async (email, username) => {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate OTP
+
+  const mailOptions = {
+    from: 'noreply@yourdomain.com', // Use a sender email (it can be any valid address)
+    to: email,
+    subject: 'Your OTP for Password Reset',
+    text: `Dear ${username},\n\nYour OTP is: ${otp}\n\nIt is valid for 10 minutes.\n\nBest regards,\nYour App`,
+  };
+
+  try {
+    // Send the email using Mailtrap
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP email sent to ${email}`);
+    return otp; // Return the OTP to be used for password reset
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    throw new Error('Failed to send OTP email');
+  }
+};
+
+module.exports = { sendOTPEmail };
+
+
+
+
+
+/*
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -54,3 +97,4 @@ RedBus`,
 };
 
 module.exports = { sendOTPEmail };
+*/

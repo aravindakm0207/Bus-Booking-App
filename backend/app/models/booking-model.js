@@ -31,6 +31,7 @@ const bookingSchema = new Schema({
       ref: 'User'},
     bus: { type: Schema.Types.ObjectId, 
       ref: 'Bus' },
+      trip: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip' },
       routeID: {
         type: Schema.Types.ObjectId,
         ref:  'Route'

@@ -56,6 +56,8 @@ const tripReducer = (state = initialState, action) => {
 
 export default tripReducer;
 */
+
+/*
 import {
     FETCH_TRIPS_REQUEST,
     FETCH_TRIPS_SUCCESS,
@@ -78,7 +80,8 @@ const initialState = {
     loading: false,
     trips: [],
     seatLayout: null,
-    error: ''
+    error: '',
+    hasSearched: false, // Add this flag
 };
 
 const tripReducer = (state = initialState, action) => {
@@ -123,7 +126,8 @@ const tripReducer = (state = initialState, action) => {
             return {
                 ...state,
                 loading: true,
-                error: '' // Clear previous errors on new search
+                error: '', // Clear previous errors on new search
+                hasSearched: true,
             };
         case SEARCH_TRIPS_SUCCESS:
             return {
@@ -187,6 +191,176 @@ const tripReducer = (state = initialState, action) => {
             return {
                 ...state,
                 error: action.payload
+            };
+
+        default:
+            return state;
+    }
+};
+
+export default tripReducer;
+*/
+import {
+    FETCH_TRIPS_REQUEST,
+    FETCH_TRIPS_SUCCESS,
+    FETCH_TRIPS_FAILURE,
+    ADD_TRIP_SUCCESS,
+    ADD_TRIP_FAILURE,
+    SEARCH_TRIPS_REQUEST,
+    SEARCH_TRIPS_SUCCESS,
+    SEARCH_TRIPS_FAILURE,
+    SEARCH_TRIPS_WITH_FILTERS_REQUEST,
+    SEARCH_TRIPS_WITH_FILTERS_SUCCESS,
+    SEARCH_TRIPS_WITH_FILTERS_FAILURE,
+    FETCH_SEAT_LAYOUT_REQUEST,
+    FETCH_SEAT_LAYOUT_SUCCESS,
+    FETCH_SEAT_LAYOUT_FAILURE,
+    UPDATE_TRIP_SUCCESS,
+    UPDATE_TRIP_FAILURE,
+    DELETE_TRIP_SUCCESS,
+    DELETE_TRIP_FAILURE
+} from '../actions/tripActions';
+
+const initialState = {
+    loading: false,
+    trips: [],
+    seatLayout: null,
+    error: '',
+    hasSearched: false, // Add this flag
+    filtersApplied: false, // Track if filters were applied
+};
+
+const tripReducer = (state = initialState, action) => {
+    switch (action.type) {
+        // Fetch trips
+        case FETCH_TRIPS_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                error: null,
+            };
+        case FETCH_TRIPS_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                trips: action.payload,
+                error: '',
+            };
+        case FETCH_TRIPS_FAILURE:
+            return {
+                ...state,
+                loading: false,
+                trips: [],
+                error: action.payload,
+            };
+
+        // Add trip
+        case ADD_TRIP_SUCCESS:
+            return {
+                ...state,
+                trips: [...state.trips, action.payload],
+                error: '',
+            };
+        case ADD_TRIP_FAILURE:
+            return {
+                ...state,
+                error: action.payload,
+            };
+
+        // Search trips
+        case SEARCH_TRIPS_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                error: '', // Clear previous errors on new search
+                hasSearched: true,
+            };
+        case SEARCH_TRIPS_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                trips: action.payload, // Save fetched trips
+                error: '',
+            };
+        case SEARCH_TRIPS_FAILURE:
+            return {
+                ...state,
+                loading: false,
+                trips: [], // Clear trips on failure
+                error: action.payload, // Store error message
+            };
+
+        // Search trips with filters and sorting
+        case SEARCH_TRIPS_WITH_FILTERS_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                error: '', // Clear previous errors
+                filtersApplied: true, // Mark that filters are applied
+            };
+        case SEARCH_TRIPS_WITH_FILTERS_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                trips: action.payload, // Save fetched trips with filters and sorting applied
+                error: '',
+            };
+        case SEARCH_TRIPS_WITH_FILTERS_FAILURE:
+            return {
+                ...state,
+                loading: false,
+                trips: [], // Clear trips on failure
+                error: action.payload, // Store error message
+                filtersApplied: false, // Reset the filter flag on failure
+            };
+
+        // Fetch seat layout
+        case FETCH_SEAT_LAYOUT_REQUEST:
+            return {
+                ...state,
+                loading: true,
+            };
+        case FETCH_SEAT_LAYOUT_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                seatLayout: action.payload,
+                error: '',
+            };
+        case FETCH_SEAT_LAYOUT_FAILURE:
+            return {
+                ...state,
+                loading: false,
+                seatLayout: null,
+                error: action.payload,
+            };
+
+        // Update trip
+        case UPDATE_TRIP_SUCCESS:
+            return {
+                ...state,
+                trips: state.trips.map((trip) =>
+                    trip._id === action.payload._id ? action.payload : trip
+                ),
+                error: '',
+            };
+        case UPDATE_TRIP_FAILURE:
+            return {
+                ...state,
+                error: action.payload,
+            };
+
+        // Delete trip
+        case DELETE_TRIP_SUCCESS:
+            return {
+                ...state,
+                trips: state.trips.filter((trip) => trip._id !== action.payload),
+                error: '',
+            };
+        case DELETE_TRIP_FAILURE:
+            return {
+                ...state,
+                error: action.payload,
             };
 
         default:

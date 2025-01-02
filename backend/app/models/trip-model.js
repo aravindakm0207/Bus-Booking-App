@@ -9,6 +9,7 @@ const tripSchema = new Schema({
     arrival: String,
     departure: String,
     price: Number,
+   
 });
 
 module.exports = mongoose.model('Trip', tripSchema);

@@ -7,6 +7,7 @@ export const seatLayoutReducer = (state = { seatLayout: [] }, action) => {
             return { seatLayout: action.payload };
         case FETCH_SEAT_LAYOUT_FAIL:
             return { error: action.payload };
+           
         default:
             return state;
     }

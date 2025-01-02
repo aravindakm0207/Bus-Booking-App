@@ -116,7 +116,8 @@ export const FETCH_BUSES_SUCCESS = 'FETCH_BUSES_SUCCESS';
 export const FETCH_BUSES_FAILURE = 'FETCH_BUSES_FAILURE';
 export const ADD_BUS_SUCCESS = 'ADD_BUS_SUCCESS';
 export const SEARCH_BUSES_SUCCESS = 'SEARCH_BUSES_SUCCESS';
-
+export const FETCH_SEAT_LAYOUT_SUCCESS='FETCH_SEAT_LAYOUT_SUCCESS';
+export const FETCH_SEAT_LAYOUT_FAIL='FETCH_SEAT_LAYOUT_FAIL'
 
 
 // Action Types
@@ -267,7 +268,32 @@ export const addBus = (busData) => {
     };
 };
 
+export const fetchSeatLayout = (tripId) => async (dispatch) => {
+    try {
+        console.log('Fetching seat layout for tripId:', tripId); // Debugging log
 
+        // Retrieve the token from localStorage
+        const token = localStorage.getItem('token');
 
+        // Ensure the token is available
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
 
+        // Make the request with the token included in the headers
+        const { data } = await axios.get(`http://localhost:4000/api/trips/${tripId}/seatLayout`, {
+            headers: {
+                Authorization: token, // Add token in the Authorization header
+            },
+        });
 
+        console.log('Fetched seat layout data:', data); // Debugging log
+        dispatch({ type: FETCH_SEAT_LAYOUT_SUCCESS, payload: data });
+    } catch (error) {
+        console.error('Error fetching seat layout:', error.response?.data || error.message); // Debugging log
+        dispatch({
+            type: FETCH_SEAT_LAYOUT_FAIL,
+            payload: error.response?.data?.message || error.message,
+        });
+    }
+};

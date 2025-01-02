@@ -1,312 +1,10 @@
 /*
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrips } from '../actions/tripActions';  // Import the fetchTrips action
-
-const TripList = ({ busId }) => {
-    const dispatch = useDispatch();
-    const { loading, trips, error } = useSelector(state => state.trips);  // Get the trip state
-
-    useEffect(() => {
-        dispatch(fetchTrips(busId));  // Fetch trips when the component loads
-    }, [dispatch, busId]);
-
-    if (loading) return <p>Loading trips...</p>;
-    if (error) return <p>Error fetching trips: {error}</p>;
-
-    return (
-        <ul>
-            {trips.map(trip => (
-                <li key={trip._id}>{trip.date} - {trip.departureTime} to {trip.arrivalTime}</li>
-            ))}
-        </ul>
-    );
-};
-
-export default TripList;
-*/
-/*
-
-// TripList.js
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrips } from '../actions/tripActions';
-
-const TripList = ({ busId }) => {
-    const dispatch = useDispatch();
-    const { trips, loading, error } = useSelector(state => state.trips);
-
-    useEffect(() => {
-        if (busId) {
-            console.log('Bus ID is:', busId);  // Debugging: log busId
-            dispatch(fetchTrips(busId));  // Fetch trips when busId is available
-        } else {
-            console.error('Bus ID is not available');
-        }
-    }, [busId, dispatch]);
-
-    if (loading) return <p>Loading trips...</p>;
-    if (error) return <p>Error fetching trips: {error}</p>;
-
-    return (
-        <ul>
-            {trips.map(trip => (
-                <li key={trip._id}> //{ Use unique trip._id as the key }
-                    {trip.tripDate} - {trip.departureTime} to {trip.arrivalTime}
-                </li>
-            ))}
-        </ul>
-    );
-};
-
-export default TripList;
-
-
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrips } from '../actions/tripActions';
-
-const TripList = () => {
-    const dispatch = useDispatch();
-    const { trips, loading, error } = useSelector(state => state.trips);
-    console.log(trips);
-
-    useEffect(() => {
-        dispatch(fetchTrips()); // Fetch all trips for the operator
-    }, [dispatch]);
-
-    if (loading) return <p>Loading trips...</p>;
-    if (error) return <p>Error fetching trips: {error}</p>;
-
-    return (
-        <ul>
-            {trips.map(trip => (
-                <li key={trip._id}>
-                    Route: {trip.routeID?.from ?? 'N/A'} - {trip.routeID?.to ?? 'N/A'} <br />
-                    Date: {new Date(trip.date).toLocaleDateString()} <br />
-                    Departure: {trip.departure} - Arrival: {trip.arrival} <br />
-                    Bus: {trip.bus?.busNumber ?? 'N/A'} ({trip.bus?.busName ?? 'N/A'})
-                </li>
-            ))}
-        </ul>
-    );
-};
-
-export default TripList;
-
-
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrips } from '../actions/tripActions';
-
-const TripList = () => {
-    const dispatch = useDispatch();
-
-    // Destructure trips, loading, and error states
-    const { trips, loading } = useSelector(state => ({
-        trips: state.trips.trips || [],  // Ensure trips is an array
-        loading: state.trips.loading,
-       
-    }));
-
-    useEffect(() => {
-        dispatch(fetchTrips()); // Fetch all trips for the operator
-    }, [dispatch]);
-
-    // Loading and error handling
-    if (loading) return <p>Loading trips...</p>;
-   
-
-    // Conditional check to avoid mapping over non-array values
-    if (!Array.isArray(trips)) {
-        return <p>No trips available.</p>;
-    }
-
-    return (
-        <ul>
-            {trips.map(trip => (
-                <li key={trip._id}>
-                    Route: {trip.routeID?.from ?? 'N/A'} - {trip.routeID?.to ?? 'N/A'} <br />
-                    Date: {new Date(trip.date).toLocaleDateString()} <br />
-                    Departure: {trip.departure} - Arrival: {trip.arrival} <br />
-                    Bus: {trip.bus?.busNumber ?? 'N/A'} ({trip.bus?.busName ?? 'N/A'})
-                </li>
-            ))}
-        </ul>
-    );
-};
-
-export default TripList;
-
-
-
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTrips, updateTrip, deleteTrip } from '../actions/tripActions';
 
 const TripList = () => {
     const dispatch = useDispatch();
-
-    // Get trips, loading, and error state from Redux
-    const { trips, loading, error } = useSelector(state => ({
-        trips: state.trips.trips || [], // Redux state trips
-        loading: state.trips.loading,
-        error: state.trips.error
-    }));
-
-    const [editTripId, setEditTripId] = useState(null);
-    const [tripData, setTripData] = useState({
-        routeID: { from: '', to: '' },
-        date: '',
-        departure: '',
-        arrival: '',
-        bus: { busNumber: '', busName: '' },
-    });
-
-    useEffect(() => {
-        dispatch(fetchTrips()); // Dispatch action to fetch trips
-    }, [dispatch]);
-
-    const handleEdit = (trip) => {
-        setEditTripId(trip._id);
-        setTripData({
-            routeID: { from: trip.routeID?.from || '', to: trip.routeID?.to || '' },
-            date: trip.date ? new Date(trip.date).toISOString().slice(0, 10) : '',
-            departure: trip.departure || '',
-            arrival: trip.arrival || '',
-            bus: { busNumber: trip.bus?.busNumber || '', busName: trip.bus?.busName || '' },
-        });
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        const [field, subField] = name.split('.');
-
-        if (subField) {
-            setTripData(prevState => ({
-                ...prevState,
-                [field]: {
-                    ...prevState[field],
-                    [subField]: value
-                }
-            }));
-        } else {
-            setTripData(prevState => ({
-                ...prevState,
-                [field]: value
-            }));
-        }
-    };
-
-    const handleUpdate = (e) => {
-        e.preventDefault();
-        dispatch(updateTrip(editTripId, tripData)); // Dispatch action to update trip
-        dispatch(fetchTrips()); // Re-fetch trips to ensure the latest data is displayed
-        setEditTripId(null); // Reset edit state
-    };
-
-    const handleRemove = (tripId) => {
-        dispatch(deleteTrip(tripId)); // Dispatch action to delete trip
-    };
-
-    // Conditionally render based on loading/error/trips state
-    if (loading) return <p>Loading trips...</p>;
-    if (error) return <p>Error loading trips: {error}</p>;
-    if (!trips || trips.length === 0) return <p>No trips available.</p>;
-
-    return (
-        <div>
-            <ul>
-                {trips.map(trip => (
-                    <li key={trip._id}>
-                        {editTripId === trip._id ? (
-                            <form onSubmit={handleUpdate}>
-                                <input
-                                    type="text"
-                                    name="routeID.from"
-                                    value={tripData.routeID.from}
-                                    onChange={handleChange}
-                                    placeholder="From"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="routeID.to"
-                                    value={tripData.routeID.to}
-                                    onChange={handleChange}
-                                    placeholder="To"
-                                    required
-                                />
-                                <input
-                                    type="date"
-                                    name="date"
-                                    value={tripData.date}
-                                    onChange={handleChange}
-                                    required
-                                />
-                                <input
-                                    type="time"
-                                    name="departure"
-                                    value={tripData.departure}
-                                    onChange={handleChange}
-                                    placeholder="Departure"
-                                    required
-                                />
-                                <input
-                                    type="time"
-                                    name="arrival"
-                                    value={tripData.arrival}
-                                    onChange={handleChange}
-                                    placeholder="Arrival"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="bus.busNumber"
-                                    value={tripData.bus.busNumber}
-                                    onChange={handleChange}
-                                    placeholder="Bus Number"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="bus.busName"
-                                    value={tripData.bus.busName}
-                                    onChange={handleChange}
-                                    placeholder="Bus Name"
-                                    required
-                                />
-                                <button type="submit">Update</button>
-                                <button type="button" onClick={() => setEditTripId(null)}>Cancel</button>
-                            </form>
-                        ) : (
-                            <>
-                                <p>
-                                    Route: {trip.routeID?.from || 'N/A'} - {trip.routeID?.to || 'N/A'} <br />
-                                    Date: {trip.date ? new Date(trip.date).toLocaleDateString() : 'Invalid Date'} <br />
-                                    Departure: {trip.departure || 'N/A'} - Arrival: {trip.arrival || 'N/A'} <br />
-                                    Bus: {trip.bus?.busNumber || 'N/A'} ({trip.bus?.busName || 'N/A'})
-                                </p>
-                                <button onClick={() => handleEdit(trip)}>Edit</button>
-                                <button onClick={() => handleRemove(trip._id)}>Remove</button>
-                            </>
-                        )}
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-};
-
-export default TripList;
-*/
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrips, updateTrip, deleteTrip } from '../actions/tripActions';
-
-const TripList = () => {
-    const dispatch = useDispatch();
-    const [localTrips, setLocalTrips] = useState([]);
     const [editingTripId, setEditingTripId] = useState(null);
     const [tripEditData, setTripEditData] = useState({
         busId: '',
@@ -316,88 +14,128 @@ const TripList = () => {
         from: '',
         to: '',
         duration: '',
-        distance: ''
+        distance: '',
     });
 
-    const { trips, loading, error } = useSelector(state => ({
+    const { trips, loading, error } = useSelector((state) => ({
         trips: state.trips.trips || [],
         loading: state.trips.loading,
-        error: state.trips.error
+        error: state.trips.error,
     }));
 
     useEffect(() => {
-        console.log(trips)
         dispatch(fetchTrips());
     }, [dispatch]);
 
-    useEffect(() => {
-        setLocalTrips(trips);
-    }, [trips]);
-
-    const handleTripAdded = (newTrip) => {
-        setLocalTrips(prevTrips => [...prevTrips, newTrip]);
-    };
-
-    const handleRemove = (tripId) => {
-        dispatch(deleteTrip(tripId));
-        setLocalTrips(prevTrips => prevTrips.filter(trip => trip._id !== tripId));
+    const formatDateForInput = (dateString) => {
+        if (!dateString) return ''; // Handle empty date
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0]; // Extract 'YYYY-MM-DD' from ISO string
     };
 
     const handleEdit = (trip) => {
         setEditingTripId(trip._id);
         setTripEditData({
             busId: trip.bus?._id || '',
-            tripDate: trip.date,
-            departureTime: trip.departureTime,
-            arrivalTime: trip.arrivalTime,
+            tripDate: formatDateForInput(trip.date),
+            departureTime: trip.departure || '',
+            arrivalTime: trip.arrival || '',
             from: trip.routeID?.from || '',
             to: trip.routeID?.to || '',
-            duration: trip.duration,
-            distance: trip.distance
+            duration: trip.routeID?.duration || '',
+            distance: trip.routeID?.distance || '',
         });
     };
 
     const handleSaveEdit = (tripId) => {
         dispatch(updateTrip(tripId, tripEditData));
-        setEditingTripId(null);  // Exit edit mode
+        setEditingTripId(null); // Exit edit mode
+    };
+
+    const handleRemove = (tripId) => {
+        dispatch(deleteTrip(tripId));
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setTripEditData({
             ...tripEditData,
-            [name]: value
+            [name]: value,
         });
     };
 
     if (loading) return <p>Loading trips...</p>;
-    if (error) return <p>Error loading trips: {error}</p>;
-    if (!localTrips || localTrips.length === 0) return <p>No trips available.</p>;
+    if (error && (!trips || trips.length === 0)) return <p>No trips are available.</p>;
+    if (!trips || trips.length === 0) return <p>No trips are available.</p>;
 
     return (
         <div>
             <ul>
-                {localTrips.map(trip => (
+                {trips.map((trip) => (
                     <li key={trip._id}>
                         {editingTripId === trip._id ? (
                             <div>
-                                <input type="text" name="from" value={tripEditData.from} onChange={handleChange} placeholder="From" />
-                                <input type="text" name="to" value={tripEditData.to} onChange={handleChange} placeholder="To" />
-                                <input type="date" name="tripDate" value={tripEditData.tripDate} onChange={handleChange} />
-                                <input type="time" name="departureTime" value={tripEditData.departureTime} onChange={handleChange} />
-                                <input type="time" name="arrivalTime" value={tripEditData.arrivalTime} onChange={handleChange} />
+                                <label htmlFor="from">From:</label>
+                                <input
+                                    type="text"
+                                    id="from"
+                                    name="from"
+                                    value={tripEditData.from}
+                                    onChange={handleChange}
+                                />
+                                <br />
+
+                                <label htmlFor="to">To:</label>
+                                <input
+                                    type="text"
+                                    id="to"
+                                    name="to"
+                                    value={tripEditData.to}
+                                    onChange={handleChange}
+                                />
+                                <br />
+
+                                <label htmlFor="tripDate">Trip Date:</label>
+                                <input
+                                    type="date"
+                                    id="tripDate"
+                                    name="tripDate"
+                                    value={tripEditData.tripDate}
+                                    onChange={handleChange}
+                                />
+                                <br />
+
+                                <label htmlFor="departureTime">Departure Time:</label>
+                                <input
+                                    type="time"
+                                    id="departureTime"
+                                    name="departureTime"
+                                    value={tripEditData.departureTime}
+                                    onChange={handleChange}
+                                />
+                                <br />
+
+                                <label htmlFor="arrivalTime">Arrival Time:</label>
+                                <input
+                                    type="time"
+                                    id="arrivalTime"
+                                    name="arrivalTime"
+                                    value={tripEditData.arrivalTime}
+                                    onChange={handleChange}
+                                />
+                                <br />
                                 <button onClick={() => handleSaveEdit(trip._id)}>Save</button>
                                 <button onClick={() => setEditingTripId(null)}>Cancel</button>
                             </div>
                         ) : (
                             <div>
                                 <p>
-                                 Route: {trip.routeID?.from || 'N/A'} - {trip.routeID?.to || 'N/A'} <br />
-                                 Date: {trip.date ? new Date(trip.date).toLocaleDateString() : 'Invalid Date'} <br />
-                                 Departure: {trip.departure || 'N/A'} - Arrival: {trip.arrival || 'N/A'} <br />
-                                Bus: {trip.bus?.busNumber || 'N/A'} ({trip.bus?.busName || 'N/A'})
-                               </p>
- 
+                                    Route: {trip.routeID?.from || 'N/A'} - {trip.routeID?.to || 'N/A'} <br />
+                                    Date: {trip.date ? new Date(trip.date).toLocaleDateString() : 'Invalid Date'} <br />
+                                    Departure: {trip.departure || 'N/A'} - Arrival: {trip.arrival || 'N/A'} <br />
+                                    Bus: {trip.bus?.busNumber || 'N/A'} ({trip.bus?.busName || 'N/A'}) <br />
+                                    Price: Rs{trip.price || 'N/A'} 
+                                </p>
                                 <button onClick={() => handleEdit(trip)}>Edit</button>
                                 <button onClick={() => handleRemove(trip._id)}>Delete</button>
                             </div>
@@ -407,6 +145,241 @@ const TripList = () => {
             </ul>
         </div>
     );
+};
+
+export default TripList;
+*/
+
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+} from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTrips, updateTrip, deleteTrip } from "../actions/tripActions";
+
+const TripList = () => {
+  const dispatch = useDispatch();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingTripId, setEditingTripId] = useState(null);
+  const [tripEditData, setTripEditData] = useState({
+    busId: "",
+    tripDate: "",
+    departureTime: "",
+    arrivalTime: "",
+    from: "",
+    to: "",
+    duration: "",
+    distance: "",
+  });
+
+  const { trips, loading, error } = useSelector((state) => ({
+    trips: state.trips.trips || [],
+    loading: state.trips.loading,
+    error: state.trips.error,
+  }));
+
+  useEffect(() => {
+    dispatch(fetchTrips());
+  }, [dispatch]);
+
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return ""; // Handle empty date
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0]; // Extract 'YYYY-MM-DD' from ISO string
+  };
+
+  const handleEdit = (trip) => {
+    setEditingTripId(trip._id);
+    setTripEditData({
+      busId: trip.bus?._id || "",
+      tripDate: formatDateForInput(trip.date),
+      departureTime: trip.departure || "",
+      arrivalTime: trip.arrival || "",
+      from: trip.routeID?.from || "",
+      to: trip.routeID?.to || "",
+      duration: trip.routeID?.duration || "",
+      distance: trip.routeID?.distance || "",
+    });
+    setOpenDialog(true); // Open the popup dialog
+  };
+
+  const handleSaveEdit = () => {
+    dispatch(updateTrip(editingTripId, tripEditData));
+    setOpenDialog(false); // Close the dialog after saving
+    setEditingTripId(null);
+  };
+
+  const handleRemove = (tripId) => {
+    dispatch(deleteTrip(tripId));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setTripEditData({
+      ...tripEditData,
+      [name]: value,
+    });
+  };
+
+  if (loading) return <Typography>Loading trips...</Typography>;
+  if (error && (!trips || trips.length === 0))
+    return <Typography>No trips are available.</Typography>;
+  if (!trips || trips.length === 0)
+    return <Typography>No trips are available.</Typography>;
+
+  return (
+    <Box sx={{ maxWidth: 1200, mx: "auto", mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Trip List
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>From</TableCell>
+              <TableCell>To</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Departure</TableCell>
+              <TableCell>Arrival</TableCell>
+              <TableCell>Bus</TableCell>
+              <TableCell>Price</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {trips.map((trip) => (
+              <TableRow key={trip._id}>
+                <TableCell>{trip.routeID?.from || "N/A"}</TableCell>
+                <TableCell>{trip.routeID?.to || "N/A"}</TableCell>
+                <TableCell>
+                  {trip.date
+                    ? new Date(trip.date).toLocaleDateString()
+                    : "Invalid Date"}
+                </TableCell>
+                <TableCell>{trip.departure || "N/A"}</TableCell>
+                <TableCell>{trip.arrival || "N/A"}</TableCell>
+                <TableCell>
+                  {trip.bus?.busNumber || "N/A"} ({trip.bus?.busName || "N/A"})
+                </TableCell>
+                <TableCell>{trip.price || "N/A"}</TableCell>
+                <TableCell>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleEdit(trip)}
+                    sx={{ mr: 1 }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    onClick={() => handleRemove(trip._id)}
+                  >
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Dialog for Editing Trip */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Trip</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="From"
+            name="from"
+            value={tripEditData.from}
+            onChange={handleChange}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="To"
+            name="to"
+            value={tripEditData.to}
+            onChange={handleChange}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Trip Date"
+            name="tripDate"
+            type="date"
+            value={tripEditData.tripDate}
+            onChange={handleChange}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Departure Time"
+            name="departureTime"
+            type="time"
+            value={tripEditData.departureTime}
+            onChange={handleChange}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Arrival Time"
+            name="arrivalTime"
+            type="time"
+            value={tripEditData.arrivalTime}
+            onChange={handleChange}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Duration"
+            name="duration"
+            value={tripEditData.duration}
+            onChange={handleChange}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Distance (km)"
+            name="distance"
+            type="number"
+            value={tripEditData.distance}
+            onChange={handleChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleSaveEdit} color="primary" variant="contained">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
 };
 
 export default TripList;

@@ -7,6 +7,7 @@ const userSchema = new Schema({
     password: String, 
     role: String,
     phone: String,
+    profilePic:String, 
     resetPasswordToken: String,
     resetPasswordExpires: Date,
     isVerified:{

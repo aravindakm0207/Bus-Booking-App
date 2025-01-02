@@ -1,79 +1,11 @@
-/*
-require('dotenv').config()
 
-const express = require('express')
-const app = express()
-const port = 4000
-
-const cors = require('cors')
-app.use(cors())
-
-//Application Middleware
-app.use(express.json())
-
-const configureDB = require('./config/db')
-const { ExpressValidator } = require('express-validator')
-configureDB()
-
-const {checkSchema} = require('express-validator')
-
-
-const userRegisterValidationSchema = require('./app/validations/user-register-validations')
-const userLoginValidationSchema = require('./app/validations/user-login-validations')
-const usersCltr = require('./app/controllers/user-cntrl')
-console.log("usersCltr:", usersCltr);
-
-const authenticateUser = require('./app/middlewares/authenticateUser')
-const authorizeUser = require('./app/middlewares/authorizeUser')
-
-
-const busValidationSchema=require('./app/validations/bus-validations')
-const busCtrl=require('./app/controllers/bus-cltr')
-console.log("busCltr:", busCtrl);
-
-
-const bookingCltr=require('./app/controllers/booking-ctrl')
-console.log("bookingCltr:", bookingCltr);
-
-const tripCtrl = require('./app/controllers/trip-ctrl');
-console.log("tripCltr:", tripCtrl);
-
-const operatorCtrl = require('./app/controllers/operator-ctrl');
-
-
-app.post('/users/register', checkSchema(userRegisterValidationSchema), usersCltr.register)
-app.post('/users/login', checkSchema(userLoginValidationSchema), usersCltr.login)
-// routing level middleware
-app.get('/users/account', authenticateUser, usersCltr.account)
-
-app.post('/api/buses', authenticateUser,busCtrl.addBusWithRouteAndOperator)
-app.get('/api/buses', authenticateUser, busCtrl.listBuses);
-//app.get('/api/search', busCtrl.searchBuses);//for users
-app.get('/api/buses/:id',  busCtrl.getSingleBus);
-//app.put('/api/buses/:id',authenticateUser, busCtrl.updateBus)
-//app.delete('/api/buses/:id',authenticateUser, busCtrl.deleteBus)
-
-
-
-app.post('/api/trips', authenticateUser, tripCtrl.addTrip);
-app.get('/api/search', tripCtrl.searchTrips); 
-
-app.post('/api/buses/booking', authenticateUser, bookingCltr.createBooking);
-//app.get('/api/buses/:busId/seatLayout',  busCltr.getSeatLayout);
-//app.post('/api/buses/bookingTrip', authenticateUser,tripCtrl.addTrip );
-app.get('/api/trips/:tripId/seatLayout', tripCtrl.getSeatLayout);
-
-app.get('/api/buses/booking/:bookingId', authenticateUser,bookingCltr.getBookingById);
-app.listen(port, () => {
-    console.log('Server listening on  port', port)
-})
-*/
 
 require('dotenv').config();
 const express = require('express');
 const app = express();
 const port = 4000;
 const cors = require('cors');
+const path = require('path');
 
 // Application Middleware
 app.use(cors());
@@ -81,6 +13,9 @@ app.use(express.json());
 
 const configureDB = require('./config/db');
 configureDB();
+
+const mongoose = require('mongoose');
+mongoose.set('debug', true);
 
 // Import Controllers and Middleware
 const usersCltr = require('./app/controllers/user-cntrl');
@@ -93,9 +28,13 @@ const authorizeUser=require('./app/middlewares/authorizeUser')
 const { checkSchema } = require('express-validator');
 const userRegisterValidationSchema = require('./app/validations/user-register-validations');
 const userLoginValidationSchema = require('./app/validations/user-login-validations');
+const ticketCtrl= require('./app/controllers/ticket-ctrl')
+const upload = require('./app/middlewares/upload');
 
+
+ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // User Routes
-app.post('/users/register', checkSchema(userRegisterValidationSchema), usersCltr.register);
+app.post('/users/register',upload.single('profilePic'), checkSchema(userRegisterValidationSchema), usersCltr.register);
 app.get('/check-admin', usersCltr.checkAdmin)
 app.get('/users/checkemail', usersCltr.checkEmail)
 app.get('/users/checkusername', usersCltr.checkUsername)
@@ -118,9 +57,11 @@ app.post('/reject-operator', authenticateUser, authorizeUser(['admin']), usersCl
 
 
 //operator
-app.post('/api/buses', authenticateUser,busCtrl.addBus)
+app.post('/api/buses', authenticateUser,upload.array('images', 5),busCtrl.addBus)
+
+
 app.get('/api/buses', authenticateUser, busCtrl.listBuses); 
-app.get('/api/buses/:id',  busCtrl.getSingleBus)
+app.get('/api/buses/:busId',authenticateUser,  busCtrl.getSingleBus)
 app.put('/api/buses/:busId',authenticateUser, busCtrl.updateBus)
 app.delete('/api/buses/:busId', authenticateUser, busCtrl.deleteBus);
 
@@ -133,15 +74,40 @@ app.get('/api/routes', authenticateUser, tripCtrl.Routes);
 
 // Trip Routes
 app.post('/api/trips', authenticateUser, tripCtrl.addTrip);
-app.put('/api/trips/:tripId', tripCtrl.updateTrip);
-app.delete('/api/trips/:tripId', tripCtrl.deleteTrip);
-app.get('/api/search', tripCtrl.searchTrips);
-app.get('/api/trips/:tripId/seatLayout', tripCtrl.getSeatLayout);
-app.get('/api/trips', authenticateUser,tripCtrl.listTrips)
+app.put('/api/trips/:tripId', authenticateUser, tripCtrl.updateTrip);
+app.delete('/api/trips/:tripId', authenticateUser, tripCtrl.deleteTrip);
+app.get('/api/search', authenticateUser, tripCtrl.searchTrips);
+app.get('/api/trips/:tripId/seatLayout', authenticateUser, tripCtrl.getSeatLayout);
+app.get('/api/trips', authenticateUser, tripCtrl.listTrips);
+app.get('/api/search/sort', authenticateUser, tripCtrl.getTripsWithFilters);
 
-// Booking Routes
 app.post('/api/buses/booking', authenticateUser, bookingCltr.createBooking);
+app.get('/api/buses/bookings', authenticateUser, bookingCltr.getBookingsByUser);
+app.get('/api/buses/bookings/:bookingId', authenticateUser, bookingCltr.getBookingById);
 
+app.get('/api/buses/bookings/trip/:tripId', authenticateUser, bookingCltr.getBookingsByTrip);
+app.get('/api/buses/bookings/all', authenticateUser, bookingCltr.getAllBookings);
+
+
+
+
+
+// Online payment route
+app.post('/payments/online', authenticateUser, paymentCtrl.payOnline); // Online payment
+app.post('/payments/offline', authenticateUser, paymentCtrl.payOffline); // Offline payment
+app.get('/payments/success', paymentCtrl.successUpdate); // Success update
+app.get('/payments/failure', paymentCtrl.failureUpdate); // Failure update
+app.get('/payments/verify-offline/:id', authenticateUser, paymentCtrl.verifyOfflinePayment); // Verify offline payment
+app.get('/payments', authenticateUser, paymentCtrl.getPaymentsList); // Get payments list
+//app.get('/create-ticket/:paymentId', authenticateUser, paymentCtrl.createTicket);
+app.get('/api/ticket', authenticateUser, paymentCtrl.createTicket);
+
+
+app.post('/tickets/create',authenticateUser,  ticketCtrl.createTicket);
+
+// Route to get a ticket by ticketId
+app.get('/tickets/:ticketId', authenticateUser, ticketCtrl.getTicket)
+//app.get('/api/bookings/:bookingId/tickets/:ticketId', authenticateUser, ticketCtrl.getTicket)
 // Start Server
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);

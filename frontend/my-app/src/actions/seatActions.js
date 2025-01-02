@@ -52,27 +52,45 @@ import {
     BOOK_SEATS_SUCCESS, BOOK_SEATS_FAIL 
 } from '../constants/seatConstants';
 
-// Fetch seat layout for a specific trip
+
+
 export const fetchSeatLayout = (tripId) => async (dispatch) => {
     try {
-        console.log('Fetching seat layout for tripId:', tripId);  // Log the tripId being used
-        const { data } = await axios.get(`http://localhost:4000/api/trips/${tripId}/seatLayout`);
-        
-        console.log('Fetched seat layout data:', data);  // Log the data fetched from the API
-        
+        console.log('Fetching seat layout for tripId:', tripId); // Debugging log
+
+        // Retrieve the token from localStorage
+        const token = localStorage.getItem('token');
+
+        // Throw an error if no token is found
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        // Make the request to fetch the seat layout
+        const { data } = await axios.get(`http://localhost:4000/api/trips/${tripId}/seatLayout`, {
+            headers: {
+                Authorization: token, // Use token directly without Bearer
+            },
+        });
+
+        console.log('Fetched seat layout data:', data); // Debugging log
+        // Dispatch success action with seat layout data
         dispatch({ type: FETCH_SEAT_LAYOUT_SUCCESS, payload: data });
     } catch (error) {
-        console.error('Error fetching seat layout:', error.response?.data || error.message);  // Log the error for debugging
+        // Log the error for debugging
+        console.error('Error fetching seat layout:', error.response?.data || error.message);
+
+        // Dispatch failure action with error message
         dispatch({
             type: FETCH_SEAT_LAYOUT_FAIL,
-            payload: error.response?.data?.message || error.message,
+            payload: error.response?.data?.message || 'Failed to fetch seat layout',
         });
     }
 };
 
 
-// Book seats for a specific bus on a journey date
-export const bookSeats = (tripId, selectedSeats, journeyDate, userDetails) => async (dispatch) => {
+// Book seats for a specific trip
+export const bookSeats = (tripId, selectedSeats, journeyDate, userDetails, price) => async (dispatch) => {
     try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -88,16 +106,19 @@ export const bookSeats = (tripId, selectedSeats, journeyDate, userDetails) => as
                 name: userDetails.name,
                 email: userDetails.email,
                 phone: userDetails.phone,
+                price, // Include price in the request body
             },
             {
                 headers: {
-                    Authorization: token // Ensure the token is formatted correctly
+                    Authorization: token, // Include token in the Authorization header
                 }
             }
         );
+
+        console.log('Booking successful:', data); // Debugging log
         dispatch({ type: BOOK_SEATS_SUCCESS, payload: data });
     } catch (error) {
-        console.error('Error booking seats:', error.response?.data || error.message);
+        console.error('Error booking seats:', error.response?.data || error.message); // Debugging log
         dispatch({
             type: BOOK_SEATS_FAIL,
             payload: error.response?.data?.message || error.message,
